@@ -1,0 +1,348 @@
+<!Doctype html>
+<html lang="en" dir='ltr'>
+<head>
+  <meta charset="utf-8"> <!-- Sempre per primo -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mastermind</title>
+<style>
+body, html {
+width: 100%;
+height: 100%;
+background-image: linear-gradient(red, yellow, green);
+background-attachment: fixed;
+display: flex;
+justify-content: center;
+background-color: black;
+font-size: larger;
+}
+body p, body > p {
+    font-size: large;
+}
+main {
+position: relative;
+width: 70%;
+height: 100%;
+display: flex;
+justify-content: center;
+}
+
+.mainSection {
+text-align: center;
+}
+
+.scoreAside {
+    position: fixed;
+    right: 25%;
+    top: 15%;
+    font-size: large;
+}
+
+.colorSequence {
+margin-bottom: 18px;
+display: inline-block;
+width: 30px;
+height: 30px;
+background-color: lightgrey;
+border: 1px solid black;
+}
+
+.colorSequenceGuess {
+margin-bottom: 18px;
+display: inline-block;
+width: 30px;
+height: 30px;
+}
+
+.guessSequence, .guessSequenceRemoved {
+display: inline-block;
+width: 30px;
+height: 30px;
+background-color: white;
+border: 1px solid black;
+}
+
+.colorPalette {
+position: fixed;
+left: 15%;
+top: 23%;
+}
+
+.colorPaletteElement {
+width: 30px;
+height: 30px;
+border: 1px solid black;
+}
+
+.colorPaletteElementDrag {
+display: inline-block;
+width: 30px;
+height: 30px;
+}
+
+.guessConfirm11 {
+display: inline-block;
+background-color: green;
+border-radius: 50%;
+border: 1px solid black;
+width: 25px;
+height: 25px;
+}
+
+.guessConfirm10 {
+    display: inline-block;
+    background-color: black;
+border-radius: 50%;
+border: 1px solid black;
+width: 25px;
+height: 25px;
+}
+
+.guessConfirm00 {
+    display: inline-block;
+background-color: red;
+border-radius: 50%;
+border: 1px solid black;
+width: 25px;
+height: 25px;
+}
+
+</style>
+
+</head>
+
+<body onload="createPage()">
+
+<body>
+
+<script>
+
+const body = document.querySelector('body');
+
+function createPage() {
+console.log('loaded');
+let main = document.createElement('main');
+let mainSection = document.createElement('section');
+mainSection.classList.add('mainSection');
+mainSection.innerHTML = `
+<h1>MasterMind</h1>
+<p>Guess the sequence of colors!</p>
+<button type="button" onclick="startGame()" id="startBtn">Start</button>
+<div></div>
+ `
+let attemptsSection = document.createElement('section');
+attemptsSection.setAttribute('id', 'attempts');
+mainSection.appendChild(attemptsSection);
+main.appendChild(mainSection);
+body.appendChild(main);
+}
+
+const colors = ['red', 'blue', 'yellow', 'green', 'orange', 'pink', 'lightblue'];
+const colors2 = ['red', 'blue', 'yellow', 'green', 'orange', 'pink', 'lightblue'];
+let colorSequence = [];
+
+let guessTurn = 0;
+
+function startGame() {
+  console.log('started');
+  document.querySelector('#startBtn').style.display = 'none';
+    for (let i = colors.length -1; i > 0; i--) {
+     let j = Math.floor(Math.random() * (i+1));
+     let k = colors[i];
+     colors[i] = colors[j];
+     colors[j] = k;
+    }
+  let i = 0;
+    while (i < 5) {
+     colorSequence.push(colors[i]);
+     i++;
+    }
+    for (element of colorSequence) {
+     let colorElement = document.createElement('span');
+     colorElement.classList.add('colorSequence');
+     //colorElement.dataset.gameColor = element;
+     document.querySelector('.mainSection > div').appendChild(colorElement);
+    }
+  let scoreAside = document.createElement('aside');
+  scoreAside.classList.add('scoreAside');
+  scoreAside.innerHTML = `
+  Attempts: ${guessTurn}
+  `
+  document.querySelector('.mainSection > div').appendChild(document.createElement('hr'));
+  document.querySelector('main').appendChild(scoreAside);
+  console.log(colorSequence);
+  addGuess(colorSequence);  
+  createPalette();
+}
+
+let palette;
+
+function createPalette() {
+  palette = document.createElement('aside');
+  document.querySelector('main').appendChild(palette);
+    for (let h = 0; h < colors2.length; h++) { 
+     let paletteElement = document.createElement('div');
+     let paletteElementColor = document.createElement('span');
+     palette.classList.add('colorPalette');
+     Object.assign(paletteElement.style, {
+       backgroundColor: 'white'
+       });
+     Object.assign(paletteElementColor.style, {
+       backgroundColor: colors2[h],
+       });
+     paletteElementColor.setAttribute('draggable', 'true');
+     paletteElementColor.setAttribute('id', guessTurn + 'drag' + h);
+     paletteElementColor.dataset.gameColor = colors2[h];
+     paletteElementColor.addEventListener('dragstart', drag);
+     paletteElement.classList.add('colorPaletteElement');
+     paletteElementColor.classList.add('colorPaletteElementDrag');
+     paletteElement.appendChild(paletteElementColor); 
+     palette.appendChild(paletteElement); 
+    }
+}
+
+function addGuess(colorSequence) {
+  const guessSequenceRemove = document.querySelectorAll('.guessSequence');
+    for (guessSequenceRemoveEls of guessSequenceRemove) {
+        guessSequenceRemoveEls.removeEventListener('dragover', allowDrop);
+        guessSequenceRemoveEls.removeEventListener('drop', drop);
+        guessSequenceRemoveEls.classList.remove('guessSequence');
+        guessSequenceRemoveEls.classList.add('guessSequenceRemoved');
+    }
+  const guessSection = document.querySelector('#attempts');
+    let j = 0;
+    while (j < 5) {
+     let guessElement = document.createElement('div');
+     guessElement.classList.add('guessSequence');
+     guessElement.addEventListener('drop', drop);
+     guessElement.addEventListener('dragover', allowDrop);
+     guessSection.appendChild(guessElement);
+     j++;
+    }
+  const guessBtn = document.createElement('button');
+  guessBtn.addEventListener('click', ()=>compareGuess(colorSequence, guessSection, guessBtn));
+  guessBtn.innerHTML = 'Guess';
+  guessSection.appendChild(document.createElement('br'))
+  guessSection.appendChild(guessBtn);
+}
+
+function compareGuess(colorSequence, guessSection, guessBtn) {
+  guessSection.removeChild(guessBtn);
+  let guessEls = document.querySelectorAll('.guessSequence');
+  let guessAnswer;
+  let guessConfirm11 = [];
+  let guessConfirm10 = [];
+  let guessConfirm00 = [];
+  document.querySelector('#attempts').appendChild(document.createElement('br'));
+    for (let i = 0; i < 5; i++) {
+      let index = colorSequence.indexOf(guessEls[i].dataset.gameColor);
+      console.log(index);
+      /* guessAnswer = document.createElement('div');
+      guessAnswer.classList.add('colorSequence'); */
+      let guessConfirm = document.createElement('span');
+      if (index === i) {
+        guessConfirm.classList.add('guessConfirm11');
+        guessConfirm11.unshift(guessConfirm);
+      } else if (index !== i && index !== -1) {
+        guessConfirm.classList.add('guessConfirm10');
+        guessConfirm10.unshift(guessConfirm);
+      } else if (index === -1 || !index) {
+        guessConfirm.classList.add('guessConfirm00');
+        guessConfirm00.unshift(guessConfirm);
+      }
+      /* guessAnswer.appendChild(guessConfirm); */
+      /* document.querySelector('#attempts').appendChild(guessAnswer); */
+    }
+    for (confirm11 of guessConfirm11) {
+      guessAnswer = document.createElement('div');
+      guessAnswer.classList.add('colorSequenceGuess');
+      guessAnswer.appendChild(confirm11);
+      document.querySelector('#attempts').appendChild(guessAnswer);
+    }
+    for (confirm10 of guessConfirm10) {
+      guessAnswer = document.createElement('div');
+      guessAnswer.classList.add('colorSequenceGuess');
+      guessAnswer.appendChild(confirm10);
+      document.querySelector('#attempts').appendChild(guessAnswer);
+    }
+    for (confirm00 of guessConfirm00) {
+      guessAnswer = document.createElement('div');
+      guessAnswer.classList.add('colorSequenceGuess');
+      guessAnswer.appendChild(confirm00);
+      document.querySelector('#attempts').appendChild(guessAnswer);
+    }
+    console.log('guessConfirm00', guessConfirm00);
+    console.log('guessConfirm10', guessConfirm10);
+    console.log('guessConfirm11', guessConfirm11);
+    if (guessConfirm11.length === 5) {
+      winGame();
+    } else {
+      prepareNewGuess(colorSequence);
+    }
+}
+
+function allowDrop(ev) {
+  ev.preventDefault();
+}
+
+function drag(ev) {
+  ev.dataTransfer.setData("text", ev.target.id);
+}
+
+let guessArray = [];
+
+function drop(ev) {
+  ev.preventDefault();
+  var data = ev.dataTransfer.getData("text");
+  let gameColorTemp = document.getElementById(data).dataset.gameColor;
+  ev.target.appendChild(document.getElementById(data));
+  ev.target.dataset.gameColor = gameColorTemp;
+}
+
+function prepareNewGuess(colorSequence) {
+  palette.remove();
+  guessTurn += 1;
+  createPalette();
+  document.querySelector('.scoreAside').innerHTML = `
+  Attempts: ${guessTurn}
+  `
+  document.querySelector('#attempts').appendChild(document.createElement('br'));
+  addGuess(colorSequence);
+}
+
+function winGame() {
+
+}
+
+/*function createPalette() {
+    let guessTurn = 0; // Variabile locale all'interno di createPalette()
+  
+    function incrementGuessTurn() {
+      guessTurn += 1;
+    }
+  
+    function resetGuessTurn() {
+      guessTurn = 0;
+    }
+  
+    palette = document.createElement('aside');
+    document.querySelector('main').appendChild(palette);
+  
+    // Resto del codice della funzione createPalette() ...
+  
+    return {
+      incrementGuessTurn,
+      resetGuessTurn
+    };
+  }
+  
+  // Esempio di utilizzo:
+  const paletteFunctions = createPalette();
+  paletteFunctions.resetGuessTurn(); // Riporta guessTurn a 0
+  */
+
+</script>
+
+ 
+
+</html>
+
